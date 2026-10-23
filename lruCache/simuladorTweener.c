@@ -175,8 +175,8 @@ static int procesarUsuario(const tEstrategia *e, tCache *c, FILE *pf, const tUsu
     return ok;
 }
 
-/* Una corrida completa con una cache nueva. Los datos leidos se descartan. */
-static int correrUna(const tEstrategia *e, unsigned capacidad, FILE *pf,
+/* Realiza una simulacion con una cache nueva. Los datos leidos se descartan. */
+static int realizarSimulacion(const tEstrategia *e, unsigned capacidad, FILE *pf,
                      const tUsuario *usu, size_t cant, tContadores *k)
 {
     tCache c;
@@ -206,8 +206,8 @@ static int correrUna(const tEstrategia *e, unsigned capacidad, FILE *pf,
     return ok;
 }
 
-/* Repite la corrida, promedia los tiempos e imprime una fila de la tabla */
-static int correrFila(const tEstrategia *e, unsigned capacidad, int repeticiones,
+/* Repite la simulacion, promedia los tiempos e imprime una fila de la tabla */
+static int medirYMostrarFila(const tEstrategia *e, unsigned capacidad, int repeticiones,
                       FILE *pf, const tUsuario *usu, size_t cant)
 {
     tContadores k;
@@ -217,7 +217,7 @@ static int correrFila(const tEstrategia *e, unsigned capacidad, int repeticiones
     int ok = 1;
 
     for(i = 0; i < repeticiones && ok; i++)
-        ok = correrUna(e, capacidad, pf, usu, cant, &k);
+        ok = realizarSimulacion(e, capacidad, pf, usu, cant, &k);
 
     ms = (double)(clock() - ini) * 1000.0 / CLOCKS_PER_SEC / repeticiones;
 
@@ -248,7 +248,7 @@ static int correrFila(const tEstrategia *e, unsigned capacidad, int repeticiones
     return 1;
 }
 
-/* Corre todas las variantes y capacidades sobre un lote y muestra la tabla */
+/* Ejecuta todas las variantes y capacidades sobre un lote y muestra la tabla */
 int ejecutarSimulacion(const char *tipo, int repeticiones)
 {
     static const unsigned capacidades[] = {10, 100, 1000, 10000};
@@ -288,12 +288,12 @@ int ejecutarSimulacion(const char *tipo, int repeticiones)
            "variante", "capacid.", "total(ms)", "us/usuario", "us/posteo",
            "aciertos", "fallos", "lecturas", "altura");
 
-    ok = correrFila(estrategias, 0, repeticiones, pf, usu, cant);   /* sin cache */
+    ok = medirYMostrarFila(estrategias, 0, repeticiones, pf, usu, cant);   /* sin cache */
 
     for(pc = capacidades; pc < finC && ok; pc++)
     {
         for(pe = estrategias + 1; pe < finE && ok; pe++)
-            ok = correrFila(pe, *pc, repeticiones, pf, usu, cant);
+            ok = medirYMostrarFila(pe, *pc, repeticiones, pf, usu, cant);
     }
 
     fclose(pf);
