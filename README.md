@@ -1,10 +1,9 @@
 # Trabajo Práctico: LRU Cache
 
-Algoritmos y Estructuras de Datos. Implementación en C de un TDA **LRU Cache** (*Least Recently Used*) en dos versiones, más una simulación de la red social ficticia **Tweener** para medir cuánto mejora (o no) el procesamiento al usar la caché.
+Implementación en C de un TDA **LRU Cache** (*Least Recently Used*) en dos versiones, más una simulación de la red social ficticia **Tweener** para medir cuánto mejora (o no) el procesamiento al usar la caché.
 
 - Lenguaje: C
 - IDE: Code::Blocks 20.03 a 25.03 (proyecto `lru_cache.cbp`)
-- Convenciones: nombres en español y camelCase, sin `break` ni `continue`, TDAs genéricos (`void *`), comentarios breves en cada función del `.c`
 
 ---
 
