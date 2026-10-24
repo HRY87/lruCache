@@ -1,33 +1,5 @@
 #include "listaDoble.h"
 
-/* Saca el nodo de la lista sin liberarlo */
-static void desenlazar(tListaD *pl, tNodoD *nodo)
-{
-    if(nodo->ant)
-        nodo->ant->sig = nodo->sig;
-    else
-        pl->ini = nodo->sig;
-
-    if(nodo->sig)
-        nodo->sig->ant = nodo->ant;
-    else
-        pl->fin = nodo->ant;
-}
-
-/* Engancha un nodo ya existente al inicio */
-static void enlazarAlInicio(tListaD *pl, tNodoD *nodo)
-{
-    nodo->ant = NULL;
-    nodo->sig = pl->ini;
-
-    if(pl->ini)
-        pl->ini->ant = nodo;
-    else
-        pl->fin = nodo;
-
-    pl->ini = nodo;
-}
-
 /* Deja la lista vacia */
 void crearListaDoble(tListaD *pl)
 {
@@ -73,25 +45,52 @@ int ponerAlInicioListaDoble(tListaD *pl, const void *dato, unsigned cantBytes)
 
     memcpy(nue->info, dato, cantBytes);
     nue->tamInfo = cantBytes;
-    enlazarAlInicio(pl, nue);
+
+    nue->ant = NULL;
+    nue->sig = pl->ini;
+
+    if(pl->ini)
+        pl->ini->ant = nue;
+    else
+        pl->fin = nue;
+
+    pl->ini = nue;
 
     return TODO_OK;
 }
 
-/* Lleva un nodo de la lista al inicio en tiempo constante */
+/* Lleva un nodo de la lista al inicio en tiempo constante, sin crear ni liberar memoria */
 void moverAlInicioListaDoble(tListaD *pl, tNodoD *nodo)
 {
-    if(nodo != pl->ini)
+    if(nodo != pl->ini)         /* si no es el primero, tiene anterior */
     {
-        desenlazar(pl, nodo);
-        enlazarAlInicio(pl, nodo);
+        nodo->ant->sig = nodo->sig;
+
+        if(nodo->sig)
+            nodo->sig->ant = nodo->ant;
+        else
+            pl->fin = nodo->ant;
+
+        nodo->ant = NULL;
+        nodo->sig = pl->ini;
+        pl->ini->ant = nodo;
+        pl->ini = nodo;
     }
 }
 
 /* Quita y libera un nodo de la lista en tiempo constante */
 void eliminarNodoListaDoble(tListaD *pl, tNodoD *nodo)
 {
-    desenlazar(pl, nodo);
+    if(nodo->ant)
+        nodo->ant->sig = nodo->sig;
+    else
+        pl->ini = nodo->sig;
+
+    if(nodo->sig)
+        nodo->sig->ant = nodo->ant;
+    else
+        pl->fin = nodo->ant;
+
     free(nodo->info);
     free(nodo);
 }

@@ -9,8 +9,15 @@ void crearLista(tLista *pl)
 /* Libera todos los nodos y sus datos */
 void vaciarLista(tLista *pl)
 {
+    tNodo *elim;
+
     while(*pl)
-        eliminarNodoLista(pl);
+    {
+        elim = *pl;
+        *pl = elim->sig;
+        free(elim->info);
+        free(elim);
+    }
 }
 
 /* Copia el dato en un nodo nuevo al comienzo de la lista */
@@ -40,16 +47,22 @@ int ponerAlComienzoLista(tLista *pl, const void *dato, unsigned cantBytes)
 /* Saca el ultimo nodo; si dato no es NULL, copia en el hasta cantBytes de su info */
 int sacarUltimoLista(tLista *pl, void *dato, unsigned cantBytes)
 {
+    tNodo *elim;
+
     if(!*pl)
         return LISTA_VACIA;
 
     while((*pl)->sig)
         pl = &(*pl)->sig;
 
-    if(dato)
-        memcpy(dato, (*pl)->info, MINIMO(cantBytes, (*pl)->tamInfo));
+    elim = *pl;
 
-    eliminarNodoLista(pl);
+    if(dato)
+        memcpy(dato, elim->info, MINIMO(cantBytes, elim->tamInfo));
+
+    *pl = NULL;
+    free(elim->info);
+    free(elim);
 
     return TODO_OK;
 }
