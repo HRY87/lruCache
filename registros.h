@@ -8,6 +8,7 @@
 
 #define NOMBRE_POSTEOS   "posteos.dat"
 #define FORMATO_USUARIOS "usuarios_%s.dat"   /* %s = concentrado, disperso u ordenado */
+#define FORMATO_NOMBRE_USUARIO "usuario%05u"
 
 typedef struct
 {

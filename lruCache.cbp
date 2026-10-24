@@ -39,6 +39,14 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="arbol.h" />
+		<Unit filename="archivos.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="archivos.h" />
+		<Unit filename="datosEntrada.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="datosEntrada.h" />
 		<Unit filename="generadorLotes.c">
 			<Option compilerVar="CC" />
 		</Unit>
@@ -51,6 +59,10 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="listaDoble.h" />
+		<Unit filename="loteManual.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="loteManual.h" />
 		<Unit filename="lruCacheArbol.c">
 			<Option compilerVar="CC" />
 		</Unit>
