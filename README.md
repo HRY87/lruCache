@@ -1,6 +1,6 @@
 # Trabajo Práctico: LRU Cache
 
-Implementación en **C** de un TDA **LRU Cache** (*Least Recently Used*) en dos versiones, más una simulación de la red social ficticia **Tweener** que mide cuánto mejora (o no) el procesamiento al usar la caché.
+Implementación en **C** de un TDA **LRU Cache** (*Least Recently Used*) en dos versiones, más una simulación de la red social ficticia **Tweener** que mide cuánto mejora (o no) el procesamiento al usar la caché. Esta rama (`loteManual`) agrega además la **carga manual de lotes** (el usuario escribe a mano los feeds) y un **visor de archivos** `.dat` para comprobar qué contiene cada lote.
 
 | | |
 |---|---|
@@ -20,10 +20,12 @@ Implementación en **C** de un TDA **LRU Cache** (*Least Recently Used*) en dos 
 6. [PARTE 2: caché con lista doble + árbol índice](#6-parte-2-caché-con-lista-doble--árbol-índice)
 7. [Manejo de memoria (Partes 1 y 2)](#7-manejo-de-memoria-partes-1-y-2)
 8. [PARTE 3: simulación Tweener](#8-parte-3-simulación-tweener)
-9. [Ingreso de datos: qué pasa con cada entrada](#9-ingreso-de-datos-qué-pasa-con-cada-entrada)
-10. [Test cruzado](#10-test-cruzado)
-11. [Resultados esperados y ejemplo](#11-resultados-esperados-y-ejemplo)
-12. [Decisiones de diseño y limitaciones](#12-decisiones-de-diseño-y-limitaciones)
+9. [Ingreso de datos: qué pasa con cada entrada](#9-ingreso-de-datos-qué-pasa-con-cada-entrada) (`datosEntrada`)
+10. [Lote manual](#10-lote-manual) (`loteManual`)
+11. [Visor de archivos](#11-visor-de-archivos) (`archivos`)
+12. [Test cruzado](#12-test-cruzado)
+13. [Resultados esperados y ejemplo](#13-resultados-esperados-y-ejemplo)
+14. [Decisiones de diseño y limitaciones](#14-decisiones-de-diseño-y-limitaciones)
 
 ---
 
@@ -50,6 +52,7 @@ El proyecto tiene **tres partes**:
 | **1** | LRU Cache con **lista simple** (cada operación recorre la lista) | `lista`, `lruCacheLista` |
 | **2** | LRU Cache con **lista doble + árbol binario de búsqueda** como índice | `listaDoble`, `arbol`, `lruCacheArbol` |
 | **3** | Generador de lotes de prueba y simulador de la red social Tweener | `generadorLotes`, `simuladorTweener`, `registros.h` |
+| **Extensión** (rama `loteManual`) | Lectura de datos por consola, **carga manual de lotes** y **visor de archivos** `.dat` | `datosEntrada`, `loteManual`, `archivos` |
 
 ---
 
@@ -73,8 +76,13 @@ lruCache/
 ├── registros.h             Estructuras de los archivos binarios      ─┐
 ├── generadorLotes.h/.c     Generador de lotes con semilla            ─┤ Parte 3
 ├── simuladorTweener.h/.c   Simulación y tabla de resultados          ─┤
-├── testCruzado.h/.c        Test de consistencia Parte 1 vs Parte 2   ─┤
-└── main.c                  Menú principal y lectura de datos         ─┘
+├── testCruzado.h/.c        Test de consistencia Parte 1 vs Parte 2   ─┘
+│
+├── datosEntrada.h/.c       Lectura de números y nombres por consola  ─┐
+├── loteManual.h/.c         Crea un lote escribiendo los feeds a mano ─┤ Extensión
+├── archivos.h/.c           Muestra registros de los archivos .dat    ─┘
+│
+└── main.c                  Menú principal
 ```
 
 ### Dependencias entre archivos
@@ -86,11 +94,15 @@ lruCache/
                   |           \     /
           lruCacheLista     lruCacheArbol
                   \           /
-        simuladorTweener   testCruzado        generadorLotes
-                  \           |                  /
-                   \          |                 /
-                           main.c  ◄── registros.h (usado por generador y simulador)
+        simuladorTweener   testCruzado     generadorLotes   loteManual   archivos
+                  \           |                 |              |            |
+                   \          |                 |              |            |
+                    └─────────┴───────── main.c ◄┴──────────────┴────────────┘
+                                           ▲
+                                      datosEntrada
 ```
+
+`registros.h` lo usan `generadorLotes`, `simuladorTweener`, `loteManual` y `archivos`. `datosEntrada` lo usan `main.c` (menú y preguntas) y `loteManual` (cantidad de usuarios y confirmación de sobrescritura).
 
 Los TDAs básicos (`lista`, `listaDoble`, `arbol`) **no saben nada de cachés**: solo guardan bloques de bytes. La lógica LRU vive únicamente en `lruCacheLista` y `lruCacheArbol`.
 
@@ -105,11 +117,14 @@ Los TDAs básicos (`lista`, `listaDoble`, `arbol`) **no saben nada de cachés**:
 | `listaDoble.h` / `.c` | TDA | Lista doble genérica con **dos extremos** (`ini`, `fin`). Mover al inicio y eliminar un nodo son O(1) |
 | `arbol.h` / `.c` | TDA | Árbol binario de búsqueda genérico, no balanceado. Trabaja con **enlaces** (`tArbol *`) |
 | `lruCacheArbol.h` / `.c` | caché | **Parte 2.** Define `tLruCacheArbol`: combina lista doble (orden de uso y datos) y árbol (índice por clave). Incluye `alturaLruCacheArbol` |
-| `registros.h` | header | Constantes y estructuras de archivo: `tPosteo`, `tUsuario`, nombres de archivos |
+| `registros.h` | header | Constantes y estructuras de archivo: `tPosteo`, `tUsuario`, nombres de archivos y formato del nombre de usuario |
 | `generadorLotes.h` / `.c` | aplicación | Genera `posteos.dat` y `usuarios_<tipo>.dat` a partir de una semilla |
 | `simuladorTweener.h` / `.c` | aplicación | Corre la simulación sin caché, con Parte 1 y con Parte 2, y muestra la tabla |
 | `testCruzado.h` / `.c` | prueba | Aplica las mismas operaciones aleatorias a ambas cachés y verifica que sean equivalentes y consistentes; detecta fugas |
-| `main.c` | aplicación | Menú, lectura de números por consola con valores por defecto |
+| `datosEntrada.h` / `.c` | entrada | `leerNumero` y `leerNombre`: lectura segura por consola, con valor por defecto. Antes vivían en `main.c` |
+| `loteManual.h` / `.c` | aplicación | `crearLoteManual`: arma `usuarios_<lote>.dat` con los feeds que escribe el usuario |
+| `archivos.h` / `.c` | aplicación | `verPosteos` y `verUsuarios`: muestran un rango de registros de `posteos.dat` o de un lote de usuarios |
+| `main.c` | aplicación | Menú y una función `opcion...` por cada entrada del menú (pregunta los datos y llama al módulo correspondiente) |
 
 ---
 
@@ -149,10 +164,14 @@ Los archivos `.dat` se crean y se leen **con ruta relativa**, es decir, en el di
 3. Generar lote ordenado
 4. Test cruzado (Parte 1 vs Parte 2)
 5. Simulacion Tweener
+6. Ver contenido de un archivo
+7. Crear lote manual
 0. Salir
 ```
 
-Flujo típico: **1, 2 y 3** (generar los lotes) → **4** (verificar las cachés) → **5** (simular).
+Flujo típico: **1, 2 y 3** (generar los lotes) → **6** (mirar qué quedó en los archivos) → **4** (verificar las cachés) → **5** (simular).
+
+Flujo con lote manual: **generar al menos un lote con 1, 2 o 3** (para que exista `posteos.dat`) → **7** (crear el lote manual) → **6** (comprobar lo escrito) → **5**, elegir la opción *5 otro* y escribir el nombre del lote.
 
 ---
 
@@ -504,7 +523,8 @@ Reglas concretas:
 | `LARGO_USUARIO` | 15 | `char usuario[15]` |
 | `LARGO_FEED` | 20 | Posteos por feed |
 | `NOMBRE_POSTEOS` | `"posteos.dat"` | Archivo de posteos |
-| `FORMATO_USUARIOS` | `"usuarios_%s.dat"` | `%s` = `concentrado`, `disperso` u `ordenado` |
+| `FORMATO_USUARIOS` | `"usuarios_%s.dat"` | `%s` = `concentrado`, `disperso`, `ordenado` o el nombre de un lote manual |
+| `FORMATO_NOMBRE_USUARIO` | `"usuario%05u"` | Nombre de cada usuario: `usuario00001`, `usuario00002`, … (lo usa `loteManual`) |
 
 ```c
 typedef struct { int id; char texto[LARGO_TEXTO]; } tPosteo;      /* id = posición del registro */
@@ -616,11 +636,21 @@ Los contadores **no** se promedian: son idénticos en todas las repeticiones (el
 
 ## 9. Ingreso de datos: qué pasa con cada entrada
 
-Toda la lectura por consola pasa por una única función, `leerNumero(mensaje, defecto)` en `main.c`. Muestra el mensaje con el valor por defecto entre corchetes, por ejemplo:
+Toda la lectura por consola pasa por dos funciones de `datosEntrada.c`: `leerNumero(mensaje, defecto)` para números y `leerNombre(mensaje, defecto, dest, tam)` para nombres de lote. Las dos muestran el mensaje con el valor por defecto entre corchetes, por ejemplo:
 
 ```
 Semilla [42]:
+Nombre del lote [manual]:
 ```
+
+### 9.0. `datosEntrada.h` / `datosEntrada.c`
+
+| Elemento | Descripción |
+|---|---|
+| `LARGO_NOMBRE` (32) | Tamaño del buffer de un nombre de lote, incluido el `'\0'`: admite hasta **31 caracteres** |
+| `leerNumero` | Lee una línea y devuelve un `unsigned long`; con línea vacía, texto sin dígitos o fin de entrada devuelve el valor por defecto (reglas en 9.1) |
+| `leerNombre` | Lee un nombre de letras, números o `_`. Devuelve `1` si es válido (y lo copia a `dest`) o `0` si no (y avisa) (reglas en 9.5) |
+| `descartarLinea` (`static`) | Consume lo que quede de la línea actual para que un texto demasiado largo no se lea como respuesta de la pregunta siguiente |
 
 ### 9.1. Reglas de `leerNumero`
 
@@ -649,11 +679,13 @@ El valor por defecto del menú es **0 = Salir**:
 | `1`, `2`, `3` | Genera lote concentrado, disperso u ordenado |
 | `4` | Test cruzado |
 | `5` | Simulación |
+| `6` | Ver contenido de un archivo (sección 11) |
+| `7` | Crear lote manual (sección 10) |
 | `0` | Sale |
 | **Enter** (sin escribir nada) | **Sale del programa** (el defecto es 0) |
 | Texto no numérico | Equivale a Enter: **sale** |
 | Fin de entrada | **Sale** (así el programa no entra en bucle infinito con entrada redirigida) |
-| Cualquier otro número (`7`, `-1`) | Imprime `Opcion invalida.` y vuelve a mostrar el menú |
+| Cualquier otro número (`8`, `-1`) | Imprime `Opcion invalida.` y vuelve a mostrar el menú |
 
 ### 9.3. Generar un lote (opciones 1, 2 y 3)
 
@@ -693,8 +725,9 @@ Efectos que conviene saber:
 
 | Pregunta | Defecto | Efecto |
 |---|---|---|
-| `Lote (1 concentrado, 2 disperso, 3 ordenado, 4 todos)` | 4 | `1` a `3`: un solo lote. `4` (o Enter): los tres lotes seguidos. Otro número (incluido `0`): imprime `Lote invalido.` y vuelve al menú |
-| `Repeticiones` | 10 | Cantidad de veces que se repite cada simulación para promediar. Un valor menor que 1 (`0`, negativo) se corrige a **1** |
+| `Lote (1 concentrado, 2 disperso, 3 ordenado, 4 todos, 5 otro)` | 4 | `1` a `3`: un solo lote. `4` (o Enter): los tres lotes seguidos. `5`: un lote por nombre (se pregunta `Nombre del lote [manual]`, ver 9.5). Otro número (incluido `0`): imprime `Lote invalido.` y vuelve al menú, sin preguntar las repeticiones |
+| `Nombre del lote` (solo con `5`) | `manual` | Nombre del lote, que se busca como `usuarios_<nombre>.dat`. Si el nombre no es válido se avisa y no se simula nada |
+| `Repeticiones` | 10 | Cantidad de veces que se repite cada simulación para promediar. Un valor menor que 1 (`0`, negativo) se corrige a **1**. Solo se pregunta si hay algún lote para simular |
 
 Casos concretos:
 
@@ -704,16 +737,285 @@ Casos concretos:
 | Lote `2`, repeticiones `3` | Solo el disperso, 3 repeticiones (más rápido; útil para pruebas) |
 | Repeticiones muy grandes | Funciona, pero tarda: cada lote ejecuta 9 filas (1 sin caché + 4 capacidades × 2 partes), cada una `N` veces. El lote disperso con la Parte 1 y capacidad 10000 es el más lento |
 | Falta `usuarios_<tipo>.dat` | `No se pudo leer usuarios_<tipo>.dat (generalo con las opciones 1 a 3)`. Con "todos", sigue con el siguiente lote |
+| Lote `5` con el nombre de un lote manual | Simula ese lote igual que los generados: la cantidad de usuarios se calcula del tamaño del archivo, aunque sean menos de 200 |
 | Falta `posteos.dat` | `No se pudo abrir posteos.dat` |
 | Se regeneró el lote con otros parámetros | La simulación usa el **último archivo generado** y calcula la cantidad de usuarios desde su tamaño |
 
-### 9.5. Test cruzado (opción 4)
+### 9.5. Nombres de lote (`leerNombre`)
 
-No pide datos. Corre los escenarios fijos descritos en la sección siguiente.
+Se usa en tres lugares: opción **5 otro** de la simulación (`Nombre del lote [manual]`), opción **6** con archivo de usuarios (`Lote [concentrado]`) y opción **7** (`Nombre del lote [manual]`). El nombre se usa para armar el archivo `usuarios_<nombre>.dat`, por eso se valida.
+
+La línea se lee con `fgets` en un buffer de `LARGO_NOMBRE + 2` bytes (34): si el usuario escribe más de lo que entra, el resto se descarta con `descartarLinea` y el nombre se rechaza por largo.
+
+| Lo que se escribe | Qué ocurre |
+|---|---|
+| Solo **Enter** | Usa el nombre por defecto |
+| Fin de entrada (Ctrl+D / Ctrl+Z) | Usa el nombre por defecto |
+| Letras, números y `_` (hasta 31 caracteres) | Se acepta y se copia a `dest` |
+| Espacios, `.`, `/`, `\`, `-`, tildes u otro símbolo | `Nombre invalido (hasta 31 letras, numeros o _).` y devuelve `0`: la opción no hace nada |
+| 32 caracteres o más | Mismo mensaje. El resto de la línea se descarta y **no** se interpreta como respuesta de la pregunta siguiente |
+
+Como solo se aceptan letras, números y `_`, el nombre nunca puede contener separadores de carpeta: el programa no puede leer ni escribir fuera del directorio de trabajo con un nombre de lote. Una validación fallida **no** deja `dest` modificado.
+
+### 9.6. Ver contenido de un archivo (opción 6)
+
+Pregunta qué archivo mirar y qué registros mostrar. El detalle de los datos, la salida y los casos está en la [sección 11](#11-visor-de-archivos).
+
+| Pregunta | Defecto | Efecto |
+|---|---|---|
+| `Archivo (1 posteos, 2 usuarios)` | 1 | `1`: `posteos.dat`. `2`: un lote de usuarios. Otro valor: `Archivo invalido.` y vuelve al menú |
+| `Lote` (solo con `2`) | `concentrado` | Nombre del lote (9.5). Si es inválido, vuelve al menú |
+| `Primer registro` | 0 | Posición del primer registro a mostrar (el primero es el 0) |
+| `Cantidad de registros` | 10 | Cuántos registros mostrar (`VISTA_DEFECTO`) |
+
+### 9.7. Crear lote manual (opción 7)
+
+Pregunta solo el nombre del lote (`Nombre del lote [manual]`, ver 9.5) y llama a `crearLoteManual`. Todo lo demás (sobrescritura, cantidad de usuarios y los ids de cada feed) se pregunta dentro de esa función; está en la [sección 10](#10-lote-manual).
+
+### 9.8. Test cruzado (opción 4)
+
+No pide datos. Corre los escenarios fijos descritos en la sección 12.
 
 ---
 
-## 10. Test cruzado
+## 10. Lote manual
+
+### 10.1. Para qué sirve
+
+Los lotes de la Parte 3 se **generan al azar** (`generadorLotes`). El lote manual permite **escribir a mano** el feed de cada usuario para armar un caso exacto: por ejemplo, comprobar con papel y lápiz cuántos aciertos y fallos debería dar la caché, reproducir en el informe una situación puntual, o probar un patrón que el generador no produce.
+
+El resultado es un `usuarios_<lote>.dat` **idéntico en formato** a los generados (registros `tUsuario`), así que cualquier otra parte del programa lo trata igual: la simulación (opción 5 → *5 otro*) y el visor (opción 6) lo leen sin saber que se hizo a mano.
+
+### 10.2. Archivos
+
+| Archivo | Rol |
+|---|---|
+| `loteManual.h` | Declara `crearLoteManual` |
+| `loteManual.c` | Pide los datos, valida cada línea y escribe el archivo |
+| `datosEntrada.h` / `.c` | `leerNumero` para la confirmación de sobrescritura y la cantidad de usuarios |
+| `registros.h` | `tUsuario`, `LARGO_FEED`, `CANT_POSTEOS`, `FORMATO_USUARIOS` y `FORMATO_NOMBRE_USUARIO` |
+| `generadorLotes.h` | Solo para el tope `USUARIOS_MAX` (99999) |
+
+### 10.3. Primitiva y constantes
+
+```c
+int crearLoteManual(const char *lote);   /* TODO_OK o PARAM_INVALIDO */
+```
+
+| Constante (`loteManual.c`) | Valor | Significado |
+|---|---|---|
+| `TAM_LINEA` | 512 | Tamaño del buffer con el que se lee cada línea de ids |
+| `LINEA_OK` | 0 | La línea tiene entre 1 y 20 ids válidos |
+| `LINEA_INVALIDA` | 1 | La línea no es válida: se vuelve a pedir |
+| `LINEA_FIN` | 2 | Se cerró la entrada (Ctrl+D / Ctrl+Z, o entrada redirigida agotada) |
+
+### 10.4. Funciones de `loteManual.c`
+
+| Función | Qué hace |
+|---|---|
+| `crearLoteManual` | Función pública. Arma el nombre del archivo, pide confirmación si ya existe, pide la cantidad de usuarios, abre el archivo y pide un usuario por vez. Si algo falla, borra el archivo y avisa |
+| `existeArchivo` (`static`) | Indica si el archivo ya existe (lo abre en lectura y lo cierra) |
+| `leerIds` (`static`) | Lee **una línea** y deja en `ids` los números que contiene; en `*cant` cuántos leyó. Devuelve `LINEA_OK`, `LINEA_INVALIDA` o `LINEA_FIN` |
+| `completarFeed` (`static`) | Si se ingresaron menos de 20 ids, completa el feed repitiendo desde el principio los ids ingresados |
+| `pedirUsuario` (`static`) | Arma un `tUsuario`: limpia el registro, le pone el nombre (`usuario00001`, …) y repite la pregunta hasta tener una línea válida. Devuelve `0` solo si se cerró la entrada |
+
+### 10.5. Cómo funciona
+
+```
+crearLoteManual("repetido")
+  │
+  ├─ archivo = "usuarios_repetido.dat"
+  ├─ ¿ya existe?  ──► sí: "Ya existe, sobrescribir (1 si, 0 no) [0]"
+  │                      cualquier cosa distinta de 1 → "No se creo el lote." (no toca nada)
+  ├─ "Cantidad de usuarios [1]"   → válida de 1 a 99999
+  ├─ abre el archivo ("wb")
+  └─ para cada usuario i = 1..N:
+        pedirUsuario ──► "usuario0000i - ids: " ──► leerIds
+        │                     ├─ LINEA_INVALIDA → avisa y vuelve a preguntar el MISMO usuario
+        │                     ├─ LINEA_FIN      → corta (el lote se cancela)
+        │                     └─ LINEA_OK       → completarFeed → fwrite del registro
+        └─ si falla algo: cierra, borra el archivo y avisa "Lote cancelado"
+```
+
+**Qué se acepta en cada línea de ids** (`leerIds`): números enteros separados por espacios, leídos con `strtol` uno a uno. Cada número debe estar entre **0 y 49999** (`CANT_POSTEOS - 1`) y puede haber **de 1 a 20**. Al terminar de leer, debe haberse consumido **toda** la línea; si queda algo, la línea se rechaza entera.
+
+| Se escribe | Resultado |
+|---|---|
+| `7` | Válida: un id, el feed será `7` repetido 20 veces |
+| `7 8 9` | Válida: el feed será `7 8 9 7 8 9 …` (20 ids, repitiendo desde el principio) |
+| `0 1 2 … 19` (20 ids) | Válida: se usa tal cual, sin repetir |
+| `7   8` o `  7 8  ` | Válida: los espacios de más se ignoran |
+| Enter sin nada | Inválida (no hay ningún id): se vuelve a preguntar |
+| `1 2 abc` o `3.5` | Inválida: queda texto sin consumir |
+| `-1` | Inválida: el id no puede ser negativo |
+| `50000` o más | Inválida: no existe ese posteo (hay 50000, del 0 al 49999) |
+| 21 ids o más | Inválida: el feed tiene un máximo de 20 |
+| Fin de entrada | Se cancela el lote completo |
+
+> **Los ids se pueden repetir** dentro de un feed y entre usuarios, y **no hace falta que estén ordenados**. De eso se trata: el usuario decide el patrón de acceso.
+
+**Nombre de cada usuario.** `FORMATO_NOMBRE_USUARIO` (`"usuario%05u"`) con el número del usuario módulo 100000: `usuario00001`, `usuario00002`, … Entra en `char usuario[15]` (12 caracteres + terminador).
+
+### 10.6. Ejemplo de uso
+
+```
+Opcion [0]: 7
+Nombre del lote [manual]: repetido
+Cantidad de usuarios [1]: 3
+Por cada usuario escribi de 1 a 20 ids de posteos (0 a 49999) separados por espacios.
+Si escribis menos de 20, la lista se repite hasta completarlos.
+usuario00001 - ids: 7
+usuario00002 - ids: 7 8 9
+usuario00003 - ids: 100 abc
+  Entrada invalida: de 1 a 20 ids enteros entre 0 y 49999
+usuario00003 - ids: 100 200
+Lote 'repetido': 3 usuarios en usuarios_repetido.dat
+```
+
+| Usuario | Feed guardado |
+|---|---|
+| `usuario00001` | `7` ×20 |
+| `usuario00002` | `7 8 9 7 8 9 …` (20 ids) |
+| `usuario00003` | `100 200 100 200 …` (20 ids) |
+
+Para simularlo: opción **5** → lote **5** → nombre `repetido`. El lote tiene solo 5 posteos distintos (7, 8, 9, 100 y 200), así que con cualquier capacidad desde 10 hay **5 fallos** (la primera vez que se pide cada uno) y el resto son aciertos. Salida real (2 repeticiones; los tiempos dependen de la máquina):
+
+```
+--- Lote repetido: 3 usuarios x 20 posteos, 2 repeticiones ---
+variante   capacid.  total(ms)   us/usuario   us/posteo  aciertos  fallos  lecturas altura
+sin cache         -       0.04        13.17       0.658         0      60        60      -
+parte 1          10       0.01         2.00       0.100        55       5         5      -
+parte 2          10       0.01         2.17       0.108        55       5         5      5
+parte 1         100       0.01         1.83       0.092        55       5         5      -
+parte 2         100       0.01         1.67       0.083        55       5         5      5
+...
+```
+
+Se cumplen las relaciones de la sección 8.5: `55 + 5 = 3 × 20` y `lecturas = fallos`. La altura 5 es la cantidad de ids distintos que quedaron en el índice.
+
+**Ideas de lotes manuales** (para el informe):
+
+| Quiero mostrar | Qué escribir |
+|---|---|
+| Máxima localidad | Todos los usuarios con un mismo id (o pocos ids repetidos) |
+| Ningún acierto | Cada usuario con 20 ids distintos entre sí y distintos de los demás (por ejemplo `0 1 … 19`, luego `20 21 … 39`, …) |
+| Árbol degenerado | Ids siempre crecientes de un usuario al siguiente: el árbol índice de la Parte 2 queda como una cadena |
+| Caché justo en el borde | Un feed con tantos ids distintos como la capacidad que se quiere probar |
+
+### 10.7. Casos y validaciones de `crearLoteManual`
+
+| Caso | Qué pasa |
+|---|---|
+| El archivo ya existe y se responde `1` | Se sobrescribe |
+| El archivo ya existe y se responde Enter, `0` u otra cosa | `No se creo el lote.` y devuelve `PARAM_INVALIDO`. No se toca el archivo |
+| Cantidad de usuarios `0`, negativa o mayor que 99999 | `Cantidad invalida (1 a 99999)` y devuelve `PARAM_INVALIDO`. No se abre ningún archivo |
+| Cantidad de usuarios menor que 200 | **Se acepta.** El mínimo de 200 usuarios del enunciado vale para los lotes que se entregan y se generan; el manual está pensado también para casos chicos y exactos |
+| No se puede crear el archivo | `No se pudo crear usuarios_<lote>.dat` y devuelve `PARAM_INVALIDO` |
+| Se cierra la entrada o falla `fwrite` a mitad del lote | `Lote cancelado: no se guardo usuarios_<lote>.dat`: el archivo se **borra** (`remove`), no queda un lote a medias |
+| Todo bien | `Lote 'nombre': N usuarios en usuarios_nombre.dat` y devuelve `TODO_OK` |
+
+Cosas a tener en cuenta:
+
+- **No genera `posteos.dat`.** Los ids del lote manual apuntan a las posiciones de ese archivo, que siempre tiene 50000 registros. Para simular hay que haber generado antes cualquier lote con las opciones 1, 2 o 3.
+- Si el lote se llama como uno generado (`concentrado`, `disperso` u `ordenado`), lo **reemplaza** (después de confirmar la sobrescritura).
+- Si se confirma la sobrescritura y después se cancela el lote, el archivo anterior ya se había vaciado al abrirlo y queda **borrado**.
+- Una línea de más de 511 caracteres se corta: el resto quedaría como respuesta de la pregunta siguiente. Con 20 ids de 5 cifras una línea nunca llega a ese tamaño.
+
+---
+
+## 11. Visor de archivos
+
+### 11.1. Para qué sirve
+
+Los `.dat` son binarios, así que no se pueden abrir con un editor de texto. El visor muestra un **rango de registros** de `posteos.dat` o de cualquier `usuarios_<lote>.dat`, para comprobar qué quedó en cada archivo: que un lote generado con otra semilla es distinto, que un lote manual guardó lo que se escribió, o que el `id` de cada posteo coincide con su posición.
+
+No modifica nada: solo lee.
+
+### 11.2. Archivos
+
+| Archivo | Rol |
+|---|---|
+| `archivos.h` | Declara `verPosteos` y `verUsuarios` |
+| `archivos.c` | Recorre el archivo y formatea cada tipo de registro |
+| `registros.h` | `tPosteo`, `tUsuario` y los nombres de archivo |
+| `utilidades.h` | Códigos de retorno (`TODO_OK`, `NO_EXISTE`, `PARAM_INVALIDO`) |
+
+### 11.3. Primitivas
+
+```c
+int verPosteos(unsigned long desde, unsigned long cantidad);
+int verUsuarios(const char *lote, unsigned long desde, unsigned long cantidad);
+```
+
+Las dos muestran `cantidad` registros a partir del registro `desde` (el primero es el 0) y devuelven `TODO_OK` o un código de error.
+
+### 11.4. Estructuras y funciones de `archivos.c`
+
+| Elemento | Qué es / qué hace |
+|---|---|
+| `tRegistro` | `union` de `tPosteo` y `tUsuario`: un único buffer con lugar para cualquiera de los dos registros |
+| `tMostrar` | Tipo de puntero a función `void (*)(unsigned long pos, const void *registro)`: cómo se imprime un registro |
+| `mostrarPosteo` (`static`) | Imprime `[pos] id=N texto: …`. Si el `id` no coincide con la posición agrega `(NO COINCIDE CON LA POSICION)` |
+| `mostrarUsuario` (`static`) | Imprime `[pos] usuario: id id id …` con los 20 ids del feed |
+| `mostrarRegistros` (`static`) | Recorrido común: abre el archivo, calcula cuántos registros tiene, se posiciona con `fseek` y llama a `mostrar` por cada registro |
+| `verPosteos` | Llama a `mostrarRegistros` con `posteos.dat`, `sizeof(tPosteo)` y `mostrarPosteo` |
+| `verUsuarios` | Arma el nombre `usuarios_<lote>.dat` y llama a `mostrarRegistros` con `sizeof(tUsuario)` y `mostrarUsuario` |
+
+**Un solo recorrido para los dos archivos.** Lo único que cambia entre ver posteos y ver usuarios es el tamaño del registro y la función que lo imprime, por eso `mostrarRegistros` los recibe por parámetro y no hay código repetido para cada tipo (la misma idea que `tEstrategia` en el simulador).
+
+### 11.5. Cómo funciona `mostrarRegistros`
+
+```
+1. Si tamReg > sizeof(tRegistro)       → PARAM_INVALIDO (el buffer no alcanzaría)
+2. fopen("rb")                         → si falla: "No se pudo abrir <archivo> (generalo primero)", NO_EXISTE
+3. fseek al final + ftell              → total = bytes / tamReg
+4. imprime el encabezado               → "<archivo>: N registros de T bytes (B bytes en total)"
+5. si desde >= total                   → "El registro X no existe", PARAM_INVALIDO
+6. fin = min(total, desde + cantidad)  → (escrito para que no desborde con cantidades enormes)
+7. fseek a desde * tamReg y lee de a un registro, llamando a mostrar(pos, &reg)
+8. fclose, TODO_OK
+```
+
+El archivo **no se carga entero en memoria**: se salta directamente al registro pedido (por eso `posteos.dat`, de varios MB, se ve al instante) y se lee solo la cantidad pedida. Mostrar `0` registros imprime solo el encabezado.
+
+### 11.6. Ejemplo de salida
+
+Opción **6**, archivo `2`, lote `repetido`, primer registro 0, cantidad 10:
+
+```
+usuarios_repetido.dat: 3 registros de 96 bytes (288 bytes en total)
+[0] usuario00001: 7 7 7 7 7 7 7 7 7 7 7 7 7 7 7 7 7 7 7 7
+[1] usuario00002: 7 8 9 7 8 9 7 8 9 7 8 9 7 8 9 7 8 9 7 8
+[2] usuario00003: 100 200 100 200 100 200 100 200 100 200 100 200 100 200 100 200 100 200 100 200
+```
+
+Y de `posteos.dat` (opción 6, archivo `1`, desde el registro 25, cantidad 2):
+
+```
+posteos.dat: 50000 registros de 148 bytes (7400000 bytes en total)
+[25] id=25 texto: xiwxvotv oaubxtpcidsusvtdzwxyjbbnyxislvgirouqkhruecqlz
+[26] id=26 texto: pag j qcjbfioesmkgzdszbi rkixqbqmyoaxrcpgfkffvmtqrjqylfqzuz tekwldujbqoasmrblhjytycaizbzoqkffivaxinbrylcflinatrrlvs ljl
+```
+
+Los textos son aleatorios y dependen de la semilla (este ejemplo: semilla 42, compilado con gcc en Linux; en Windows puede salir otro texto porque `rand()` no es igual en todas las plataformas).
+
+> El tamaño del registro es el `sizeof` real de la estructura, que incluye el relleno (*padding*) del compilador: un `tUsuario` ocupa 15 + 1 de relleno + 80 = 96 bytes y un `tPosteo`, 4 + 141 + 3 de relleno = 148. Puede variar en otro compilador o plataforma.
+
+### 11.7. Casos
+
+| Caso | Qué pasa |
+|---|---|
+| Archivo inexistente | `No se pudo abrir <archivo> (generalo primero)` y `NO_EXISTE` |
+| `Primer registro` mayor o igual que la cantidad de registros del archivo | Muestra el encabezado y `El registro X no existe`; devuelve `PARAM_INVALIDO` |
+| `Cantidad` mayor que los registros que quedan | Muestra hasta el final del archivo, sin error |
+| `Cantidad` 0 | Solo el encabezado |
+| Texto de un posteo sin terminador | `%.*s` con el largo del campo limita la impresión: nunca lee fuera del registro |
+| `id` de un posteo distinto de su posición | Se marca con `(NO COINCIDE CON LA POSICION)`: sirve para detectar un `posteos.dat` dañado |
+| Lote con nombre inválido (opción 6) | Lo rechaza `leerNombre` antes de llegar al visor |
+
+---
+
+## 12. Test cruzado
 
 La opción 4 compara la Parte 1 contra la Parte 2 con **20000 operaciones aleatorias** (50 % agregar, 40 % obtener, 10 % borrar) aplicadas por igual a ambas, con semilla fija 1234. Se prueban capacidades **1, 2, 5, 50 y 200**, y para cada una un rango de claves **igual a la capacidad** (mucho acierto) y **el triple** (mucho desborde): 10 escenarios.
 
@@ -747,9 +1049,9 @@ TODO OK
 
 ---
 
-## 11. Resultados esperados y ejemplo
+## 13. Resultados esperados y ejemplo
 
-### 11.1. Qué se espera de cada lote
+### 13.1. Qué se espera de cada lote
 
 | Lote | Aciertos | Parte 1 | Parte 2 |
 |---|---|---|---|
@@ -757,7 +1059,7 @@ TODO OK
 | **Disperso** | Casi nulos (4000 accesos sobre 50000 posteos): ningún beneficio real | Empeora al crecer la capacidad (recorrido de la lista) | Casi plana; en el mejor caso empata con no usar caché |
 | **Ordenado** | **Cero** aciertos (ningún id se repite) | Pierde contra no usar caché | Peor que la Parte 1: árbol degenerado, `altura = capacidad` |
 
-### 11.2. Corrida de ejemplo
+### 13.2. Corrida de ejemplo
 
 Release, 200 usuarios, semilla 42, 3 repeticiones. Los tiempos dependen de la máquina; importan las tendencias y los contadores.
 
@@ -812,7 +1114,7 @@ parte 2       10000     187.84       939.17      46.959         0    4000      4
 
 Sin repeticiones no hay aciertos y el árbol queda degenerado: su altura es igual a la capacidad (hasta llenarse, como con 4000 en la última fila) y la Parte 2 resulta más lenta que la Parte 1.
 
-### 11.3. Respuestas a las preguntas del enunciado
+### 13.3. Respuestas a las preguntas del enunciado
 
 **1. ¿En qué situaciones la caché mejora el tiempo y en cuáles no?**
 Mejora cuando hay **localidad**: los mismos posteos se piden varias veces mientras siguen en la caché (lote concentrado con capacidad suficiente para el conjunto popular). No mejora, y hasta empeora, cuando casi no hay repeticiones (disperso, ordenado): la caché agrega costo (buscar, insertar, descartar) sin ahorrar lecturas. Además, leer del archivo es muy barato porque el sistema operativo ya lo mantiene en su caché, de modo que cada acierto ahorra poco.
@@ -825,7 +1127,7 @@ Las claves llegan en orden creciente, así que cada inserción va al extremo der
 
 ---
 
-## 12. Decisiones de diseño y limitaciones
+## 14. Decisiones de diseño y limitaciones
 
 **`crear` recibe `tamClave`.** El enunciado habla de capacidad y comparador. Se agregó el tamaño de la clave porque el comparador es propio de cada caché, por lo tanto el tipo de clave es fijo por caché. A cambio, `agregar` y `obtener` no necesitan recibirlo en cada llamada.
 
@@ -834,6 +1136,14 @@ Las claves llegan en orden creciente, así que cada inserción va al extremo der
 **La lista doble guarda `ini` y `fin`.** Es necesario para que mover al inicio y descartar el último sean O(1), como exige la Parte 2.
 
 **Los TDAs trabajan con enlaces.** Devolver `tLista *` o `tArbol *` evita buscar dos veces y permite eliminar sin puntero al anterior.
+
+**La lectura por consola vive en `datosEntrada`.** `leerNumero` y `leerNombre` se sacaron de `main.c` para que `main.c` y `loteManual.c` compartan la misma lectura y no se repita código. `main.c` queda solo con el menú y las funciones `opcion...`.
+
+**Un solo formato de archivo de usuarios.** El lote manual escribe los mismos registros `tUsuario` que el generador, y el nombre del archivo sale siempre de `FORMATO_USUARIOS`. Así el simulador y el visor no distinguen entre un lote generado y uno manual.
+
+**El visor recibe cómo mostrar.** `archivos.c` tiene un único recorrido (`mostrarRegistros`) parametrizado por tamaño de registro y función de impresión (`tMostrar`), en lugar de un recorrido por tipo de archivo.
+
+**Los nombres de lote están restringidos** a letras, números y `_` (hasta 31 caracteres). Evita nombres con separadores de carpeta y garantiza que `usuarios_<nombre>.dat` entra en el buffer del nombre de archivo.
 
 **Limitaciones conocidas:**
 
@@ -844,3 +1154,7 @@ Las claves llegan en orden creciente, así que cada inserción va al extremo der
 - `alturaArbol` es recursiva: con un árbol degenerado de decenas de miles de nodos podría agotar la pila. `vaciarArbol` es iterativo por esa razón.
 - Los archivos `.dat` se escriben con `fwrite` de estructuras completas, por lo que **no son portables** entre compiladores o plataformas con distinto padding/endianness.
 - Las pruebas usan claves `int`; la genericidad con otros tipos de clave no está cubierta por el test.
+- El lote manual **no valida el contenido de `posteos.dat`**: solo que cada id esté entre 0 y 49999. Si el archivo no existe, el error aparece recién al simular.
+- Si se confirma la sobrescritura de un lote manual y luego se cancela (por ejemplo, cerrando la entrada), el lote anterior **se pierde**: el archivo se vacía al abrirlo y se borra al cancelar.
+- Una línea de ids de más de 511 caracteres se corta y el resto se lee como respuesta de la pregunta siguiente.
+- El visor muestra el `sizeof` real de cada registro, que depende del compilador y de la plataforma (relleno).
