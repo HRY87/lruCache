@@ -4,6 +4,7 @@
 #include "generadorLotes.h"
 #include "registros.h"
 #include "utilidades.h"
+#include "exportador.h"
 
 #define MAX_CARACTERES   139            /* "menos de 140" */
 #define ALFABETO         "abcdefghijklmnopqrstuvwxyz "
@@ -178,7 +179,9 @@ int generarLote(unsigned long semilla, const char *tipo, int usuarios, int tamPo
 
     snprintf(nombreUsu, sizeof(nombreUsu), FORMATO_USUARIOS, tipo);
     ok = generarPosteos(NOMBRE_POSTEOS)
-         && generarUsuarios(nombreUsu, usuarios, generar, &ctx);
+         && generarUsuarios(nombreUsu, usuarios, generar, &ctx)
+         && exportarATexto(NOMBRE_POSTEOS, sizeof(tPosteo), formatearPosteo) == TODO_OK
+         && exportarATexto(nombreUsu, sizeof(tUsuario), formatearUsuario) == TODO_OK;
 
     free(ctx.pool);
 
@@ -188,7 +191,7 @@ int generarLote(unsigned long semilla, const char *tipo, int usuarios, int tamPo
         return PARAM_INVALIDO;
     }
 
-    printf("Lote '%s' (semilla %lu): %d posteos en %s, %d usuarios en %s\n",
+    printf("Lote '%s' (semilla %lu): %d posteos en %s, %d usuarios en %s (con sus .txt)\n",
            tipo, semilla, CANT_POSTEOS, NOMBRE_POSTEOS, usuarios, nombreUsu);
 
     return TODO_OK;

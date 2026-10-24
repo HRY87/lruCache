@@ -39,6 +39,10 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="arbol.h" />
+		<Unit filename="exportador.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="exportador.h" />
 		<Unit filename="generadorLotes.c">
 			<Option compilerVar="CC" />
 		</Unit>
