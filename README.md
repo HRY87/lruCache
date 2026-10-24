@@ -79,7 +79,7 @@ Separación de responsabilidades en tres capas:
 
 ### Con Code::Blocks
 
-Abrir `lru_cache.cbp` y compilar con uno de los dos targets:
+Abrir `lruCache.cbp` y compilar con uno de los dos targets:
 
 | Target | Opciones | Uso |
 |---|---|---|
