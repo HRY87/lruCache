@@ -3,7 +3,7 @@
 Implementación en C de un TDA **LRU Cache** (*Least Recently Used*) en dos versiones, más una simulación de la red social ficticia **Tweener** para medir cuánto mejora (o no) el procesamiento al usar la caché.
 
 - Lenguaje: C
-- IDE: Code::Blocks 20.03 a 25.03 (proyecto `lru_cache.cbp`)
+- IDE: Code::Blocks 20.03 a 25.03 (proyecto `lruCache.cbp`)
 
 ---
 
