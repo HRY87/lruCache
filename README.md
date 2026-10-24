@@ -349,12 +349,12 @@ typedef tNodoA *tArbol;
 ```c
 typedef struct
 {
-    tListaD lista;         /* ini = más reciente, fin = menos */
-    tArbol indice;
-    unsigned cantidad;
-    unsigned capacidad;
-    unsigned tamClave;
-    tCmp cmp;
+    tListaD lista;         /* es la caché: ini = usado más recientemente, fin = menos recientemente */
+    tArbol indice;         /* índice por clave: cada nodo guarda [clave][puntero al nodo de la lista] */
+    unsigned cantidad;     /* elementos guardados ahora */
+    unsigned capacidad;    /* máximo permitido */
+    unsigned tamClave;     /* todas las claves de una caché tienen el mismo tamaño */
+    tCmp cmp;              /* comparador propio de la caché (lo usa el árbol para buscar) */
 } tLruCacheArbol;
 ```
 
